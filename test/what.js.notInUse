@@ -1,0 +1,141 @@
+//const assert = require('chai').assert;
+const expect = require('chai').expect;
+const conn = require('../databaseSetup.js');
+
+before('?', function() {});
+after('?', function(done) {
+  conn.end();
+  done();
+});
+
+describe('Basic Query Test', function() {
+
+  after('Clear database Environment', function(done) {
+    let q = 'DROP DATABASE IF EXISTS zg6kbqpoxrbx4hox;';
+    conn.query(q, function(error, results, fields) {
+      if (error) {
+        done(error);
+      } else {
+        done();
+      }
+    });
+  });
+
+  it('Create database', function(done) {
+    let q1 = 'CREATE DATABASE IF NOT EXISTS `zg6kbqpoxrbx4hox`;';
+    conn.query(q1, function(error, results, fields) {
+      if (error) {
+        done(error);
+      } else {
+        done();
+      }
+    });
+  });
+
+  it('Use database', function(done) {
+    let q1 = 'USE zg6kbqpoxrbx4hox;';
+    conn.query(q1, function(error, results, fields) {
+      if (error) done(error);
+      else done();
+    });
+  });
+
+  it('Drop database', function(done) {
+    let q1 = 'DROP DATABASE IF EXISTS `zg6kbqpoxrbx4hox`;';
+    conn.query(q1, function(error, results, fields) {
+      if (error) done(error);
+      else done();
+    });
+  });
+
+});
+
+
+
+describe('Basic Query', function() {
+
+  before('Setup Database Environment', function(done) {
+    let q1 = 'DROP DATABASE IF EXISTS `zg6kbqpoxrbx4hox`;';
+    let q2 = 'CREATE DATABASE IF NOT EXISTS `zg6kbqpoxrbx4hox`;';
+    let q3 = 'USE `zg6kbqpoxrbx4hox`;';
+    conn.query(q1, function(error, results, fields) {
+      if (error) {
+        done(error);
+      } else {
+        conn.query(q2, function(error, results, fields) {
+          if (error) {
+            done(error);
+          } else {
+            conn.query(q3, function(error, results, fields) {
+              if (error) done(error);
+              else done();
+            });
+          }
+        });
+      }
+    });
+  });
+
+  describe('System Administrator', function() {
+
+    it('Prep Table and Value', function(done) {
+      let q1 = 'USE zg6kbqpoxrbx4hox;';
+      let q2 = `CREATE TABLE IF NOT EXISTS SystemAdministrator (
+        ID varchar(128) NOT NULL,
+        password varchar(128) NOT NULL,
+        PRIMARY KEY (ID)
+      );`;
+      let q3 = "INSERT INTO `SystemAdministrator` (`ID`, `password`) VALUES ('admin', 'insecurePassword');";
+
+      conn.query(q1, function(error, results, fields) {
+        if (error) {
+          done(error);
+        } else {
+          conn.query(q2, function(error, results, fields) {
+            if (error) {
+              done(error);
+            } else {
+              conn.query(q3, function(error, results, fields) {
+                if (error) done(error);
+                else done();
+              });
+            }
+          });
+        }
+      });
+    });
+
+    it('Query System Admin', function(done) {
+      let q1 = "SELECT * FROM `SystemAdministrator` WHERE `ID`='admin';";
+      conn.query(q1, function(error, results, fields) {
+        if (error) done(error);
+        else done();
+      });
+    });
+
+    it('Tear Down', function(done) {
+      let q1 = "DROP TABLE IF EXISTS `SystemAdministrator`;";
+      conn.query(q1, function(error, results, fields) {
+        if (error) done(error);
+        else done();
+      });
+    });
+  });
+});
+
+
+//
+// describe('Array', function() {
+//   describe('#indexOf()', function() {
+//     it('????', function(done) {
+//       conn.query("SELECT * FROM Restaurant", (error, results, fields) => {
+//         if (error) throw done(error);
+//         expect(results)
+//         expect(results[0]).to.include({
+//           'name': 'My Own Amazing Restaurant'
+//         });
+//         done();
+//       });
+//     });
+//   });
+// });

@@ -1,0 +1,24 @@
+{
+  "name": "testdatabase",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha",
+    "start": "node app"
+  },
+  "dependencies": {
+    "body-parser": "*",
+    "express": "*",
+    "mysql": "*",
+    "utf8": "*",
+    "uuid": "*",
+    "socks": "*",
+    "socket.io": "*",
+    "moment": "*",
+    "mocha": "*",
+    "chai": "*"
+  },
+  "author": "",
+  "license": "ISC"
+}
