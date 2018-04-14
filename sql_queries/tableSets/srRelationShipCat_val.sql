@@ -26,7 +26,7 @@ INSERT INTO `ServiceReceiver` (`groupID`, `amountOfPeople`, `enterDate`, `leaveD
 	('b077bf76-2a5b-4e94-a3a2-5476b91e5b47', 2, '2018-01-02 10:04:00', '2018-01-02 10:24:00', 1),
 	('b1604377-4e7c-4f2f-9eee-6eaa7967e380', 2, '2018-01-02 10:05:00', '2018-01-02 10:25:00', 1);
 INSERT INTO `SitsAt` (`groupID`, `tableNo`) VALUES
-  ('0116c10d-d998-4f96-9476-10d0ba89719c', 7);
+  ('ae2668a1-221c-4b45-9684-fdbdf9ef4113', 5);
 
 /*
 INSERT INTO `ServiceReceiver` (`groupID`, `amountOfPeople`, `enterDate`, `leaveDate`) VALUES
@@ -44,6 +44,30 @@ INSERT INTO `SitsAt` (`groupID`, `tableNo`) VALUES
   ('1018b679-e005-4165-8863-a62cc29670cd', 4);
 
 */
+
+INSERT INTO `ServiceReceiver` (`groupID`, `amountOfPeople`, `enterDate`, `leaveDate`, `valid`) VALUES
+	('86e9440b-bf85-4504-8f7e-a5c141d3ebad', 2, '2018-01-04 10:02:00', '2018-01-04 10:31:00', 1);
+INSERT INTO `Queue_A` (`queueID`, `queueNo`, `queueDate`, `groupID`) VALUES
+  ('af85b734-4455-4f1a-8931-dffd4d9be3f1', 1, '2018-01-04 10:01:00', '86e9440b-bf85-4504-8f7e-a5c141d3ebad');
+INSERT INTO `ServiceReceiver` (`groupID`, `amountOfPeople`, `enterDate`, `leaveDate`, `valid`) VALUES
+	('270be2e6-10a4-4a68-ab59-b7350703a453', 2, '2018-01-04 10:04:00', NULL, 1);
+INSERT INTO `Queue_A` (`queueID`, `queueNo`, `queueDate`, `groupID`) VALUES
+  ('d4af7c06-45c5-4417-abbd-f3372e20f832', 2, '2018-01-04 10:03:00', '270be2e6-10a4-4a68-ab59-b7350703a453');
+INSERT INTO `ServiceReceiver` (`groupID`, `amountOfPeople`, `enterDate`, `leaveDate`, `valid`) VALUES
+	('9342a57d-b0b5-42ad-8b1a-b5f82730ad3a', 1, NULL, NULL, 1);
+INSERT INTO `Queue_A` (`queueID`, `queueNo`, `queueDate`, `groupID`) VALUES
+  ('2f7262dd-afe0-4eba-9dac-18a5dc250b0b', 3, '2018-01-04 10:03:00', '9342a57d-b0b5-42ad-8b1a-b5f82730ad3a');
+
+/*
+-- Find the number of waiting queue
+SELECT COUNT(*)
+FROM `queue_a` qa JOIN `servicereceiver` sr ON qa.groupID = sr.groupID
+WHERE
+sr.enterDate IS NULL AND -- Not yet enter the restaurant and waiting
+sr.valid=1 -- The service receiver queue is still valid
+*/
+
+/*
 SELECT rt.tableNo, rt.seatCount, rt.positionID
 FROM
  `RestaurantTable` rt
@@ -56,4 +80,4 @@ FROM
 WHERE
  sa.groupID IS NULL AND
  rt.seatCount BETWEEN 1 AND 2
-/**/
+*/

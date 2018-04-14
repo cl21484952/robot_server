@@ -69,27 +69,9 @@ router.get('/checkTable', pathCalled, (req, res, next) => {
   }
 
 
-  let range = [-1, -1];
+  let cate = checkTableCategory(amountOfPeople);
 
-  switch (amountOfPeople) {
-    case 1:
-    case 2:
-      range = [1, 2];
-      break;
-    case 3:
-    case 4:
-      range = [3, 4];
-      break;
-    case 5:
-    case 6:
-      range = [5, 6];
-      break;
-    default:
-      throw new Error("Amount of people not supported");
-      break;
-  }
-
-  srCheckTable(range, (data) => {
+  checkTable(cate, (data) => {
     if (data.length > 0) {
       let uid = uuidv4();
       console.log(uid);
@@ -97,10 +79,11 @@ router.get('/checkTable', pathCalled, (req, res, next) => {
       srSitsAt(uid, data[0].tableNo, console.log);
       updateSR_enterDate(uid, moment().format(dateTimeTemplate), console.log);
       rtnFormat.tableInfo = data[0];
+      res.send(rtnFormat);
     } else {
-
+      queueCheck(cate, (data)=>{rtnFormat.waitingQ = data;
+      res.send(rtnFormat);});
     }
-    res.send(rtnFormat);
   });
 });
 
@@ -128,7 +111,7 @@ module.exports.checkTableCategory = checkTableCategory = function(amtOfPpl, call
       break;
   }
 
-  callback(tableCategory);
+  return tableCategory;
 }
 
 
@@ -165,6 +148,40 @@ module.exports.checkTable = checkTable = function(tableCategory, callback) {
     callback(results);
   });
 }
+
+
+// Check the number of waiting queue
+module.exports.queueCheck = queueCheck = async function(tableCategory, callback){
+
+  let q1 = null;
+  let q1_a = "SELECT COUNT(*) wq FROM `queue_a` qa JOIN `servicereceiver` sr ON qa.groupID = sr.groupID WHERE sr.enterDate IS NULL AND sr.valid=1";
+  let q1_b = "SELECT COUNT(*) wq FROM `queue_b` qa JOIN `servicereceiver` sr ON qa.groupID = sr.groupID WHERE sr.enterDate IS NULL AND sr.valid=1";
+  let q1_c = "SELECT COUNT(*) wq FROM `queue_c` qa JOIN `servicereceiver` sr ON qa.groupID = sr.groupID WHERE sr.enterDate IS NULL AND sr.valid=1";
+
+  switch (tableCategory){
+    case "A":
+      q1 = q1_a;
+      break;
+    case "B":
+      q1 = q1_b;
+      break;
+    case "C":
+      q1 = q1_c;
+      break;
+    default:
+      throw new Error("Unknown category");
+      break;
+  }
+
+  conn.query(q1, (error, results, fields) => {
+    if (error) throw error;
+    callback(results[0].wq);
+  });
+
+}
+
+
+
 
 
 module.exports.srMake = srMake = function(groupID, amtOfPpl, callback) {
