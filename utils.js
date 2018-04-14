@@ -8,6 +8,11 @@ module.exports = {
     response.send("Path not implemented");
     next();
   },
+  pathDeprecated: function() {
+    console.log("Deprecated path called: " + request.originalUrl);
+    response.send("Path deprecated");
+    next();
+  },
   logger: function(data) {
     console.log(data)
   }

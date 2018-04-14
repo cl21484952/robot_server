@@ -15,26 +15,13 @@ const cq = require("../commonQuery.js");
 
 const dateTimeTemplate = 'YYYY-MM-DD HH:mm:ss';
 
-// Request a sr UUID and amount of people
-router.get('/make_sr', pathDep, (req, res, next) => {
-  let amountOfPeople = req.query.amountOfPeople;
-  if (!amountOfPeople) {
-    res.status(400);
-    res.send("No amount of people provided");
-    return;
-  }
-  srMakeServiceReceiver(amountOfPeople, (data) => {
-    console.log(data);
-    res.send(data);
-  });
-});
+const category = {
+  "category_A": [1, 2],
+  "category_B": [3, 4],
+  "category_C": [5, 6]
+}
+Object.freeze(category);
 
-// Get the number of waiting queue
-router.get('/waitingQueueCount', pathDep, (req, res, next) => {
-  srWaitingQueueCount((rtn) => {
-    res.send(rtn);
-  });
-});
 
 
 /* Check table availability
@@ -53,9 +40,10 @@ router.get('/checkTable', pathCalled, (req, res, next) => {
 
   const MAX_SEATCOUNT = 6;
   let rtnFormat = {
-    'error': null,
+    'error': null, // null imply no problem
     'exceedMaxSeatCount': false,
-    'tableInfo': [] // Table availability can be implied
+    'tableInfo': [], // Table availability can be implied
+    'waitingQ': -1 // -1 imply information not given
   };
 
   let amountOfPeople = parseInt(req.query.amountOfPeople);
@@ -74,7 +62,7 @@ router.get('/checkTable', pathCalled, (req, res, next) => {
     return;
   }
   if (amountOfPeople > MAX_SEATCOUNT) {
-    res.status(403);
+    res.status(400);
     rtnFormat.error = "Exceed maximum supported amount";
     res.send(rtnFormat);
     return;
@@ -109,59 +97,95 @@ router.get('/checkTable', pathCalled, (req, res, next) => {
       srSitsAt(uid, data[0].tableNo, console.log);
       updateSR_enterDate(uid, moment().format(dateTimeTemplate), console.log);
       rtnFormat.tableInfo = data[0];
+    } else {
+
     }
     res.send(rtnFormat);
   });
 });
 
 
-// Check if there is queue
-router.get('/checkQueue', pathCalled, (req, res, next) => {
-  srCheckQueue((data) => {
-    res.send(data);
-  });
-});
+// callback the name of the table
+module.exports.checkTableCategory = checkTableCategory = function(amtOfPpl, callback) {
 
+  let tableCategory = null;
 
-// Get a queue number
-router.get('/requestQueue', pathDep, (req, res, next) => {
-  let groupID = req.query.groupID;
-  let queueNo = req.query.queueNo;
-  if (!groupID || !queueNo) {
-    res.status(400);
-    res.send("groupID or queueNo not provided");
-    return;
+  switch (amtOfPpl) {
+    case 1:
+    case 2:
+      tableCategory = "A";
+      break;
+    case 3:
+    case 4:
+      tableCategory = "B";
+      break;
+    case 5:
+    case 6:
+      tableCategory = "C";
+      break;
+    default:
+      throw new Error("Amount of people not supported");
+      break;
   }
-  srRequestQueue(groupID, queueNo, (rtn) => {
-    res.send(rtn);
-  });
-});
 
-// Drop a customer based on UUID
-router.get('/drop', pathCalled, (req, res, next) => {
-  let groupID = req.query.groupID;
-  if (!groupID) {
-    res.status(400);
-    res.send("No groupID provided");
-    return;
+  callback(tableCategory);
+}
+
+
+// router.get("/test", (req, res, next)=>{
+//   checkTable(req.query.category, (data)=>{res.send(data);});
+// });
+
+
+// Check if the table of the given category is available
+module.exports.checkTable = checkTable = function(tableCategory, callback) {
+
+  let q1 = null;
+  let q1_a = "SELECT rt.tableNo, rt.seatCount, rt.positionID FROM `RestaurantTable` rt LEFT JOIN (`SitsAt` sa INNER JOIN `ServiceReceiver` sr ON sa.groupID=sr.groupID) ON rt.tableNo=sa.tableNo WHERE rt.seatCount BETWEEN 1 AND 2 AND sa.groupID IS NULL;";
+  let q1_b = "SELECT rt.tableNo, rt.seatCount, rt.positionID FROM `RestaurantTable` rt LEFT JOIN (`SitsAt` sa INNER JOIN `ServiceReceiver` sr ON sa.groupID=sr.groupID) ON rt.tableNo=sa.tableNo WHERE rt.seatCount BETWEEN 3 AND 4 AND sa.groupID IS NULL;";
+  let q1_c = "SELECT rt.tableNo, rt.seatCount, rt.positionID FROM `RestaurantTable` rt LEFT JOIN (`SitsAt` sa INNER JOIN `ServiceReceiver` sr ON sa.groupID=sr.groupID) ON rt.tableNo=sa.tableNo WHERE rt.seatCount BETWEEN 5 AND 6 AND sa.groupID IS NULL;";
+
+  switch (tableCategory){
+    case "A":
+      q1 = q1_a;
+      break;
+    case "B":
+      q1 = q1_b;
+      break;
+    case "C":
+      q1 = q1_c;
+      break;
+    default:
+      throw new Error("Unknown category");
+      break;
   }
-  srDrop(groupID, (rtn) => {
-    res.send(rtn);
+
+  conn.query(q1, (error, results, fields) => {
+    if (error) throw error;
+    callback(results);
   });
-});
+}
 
-// Get the next queue number
-// BUG Unknown return given to callback
-router.get('/nextQueueNo', pathCalled, (req, res, next) => {
-  srNextQueueNo((data) => {
-    res.send(data);
+
+module.exports.srMake = srMake = function(groupID, amtOfPpl, callback) {
+
+  let q1 = "INSERT `ServiceReceiver` (`groupID`, `amountOfPeople`) VALUES ?";
+
+  conn.query(q1, [
+    [
+      [groupID, amtOfPpl]
+    ]
+  ], (error, results, fields) => {
+    if (error) throw error;
+    callback({
+      "groupID": groupID,
+      "affectedRows": results.affectedRows
+    });
   });
-});
+}
 
 
-/* Insert table and groupID
-
-*/
+// Insert table and groupID
 module.exports.srSitsAt = srSitsAt = function(groupID, tableNo, callback) {
   let q1 = "INSERT INTO `SitsAt` (`groupID`, `tableNo`) VALUES ?;";
   let data = [groupID, tableNo];
@@ -178,7 +202,7 @@ module.exports.srSitsAt = srSitsAt = function(groupID, tableNo, callback) {
 callback :function: callback once done
 {NOT YET FINALIZED}
 */
-module.exports.srCheckTable = srCheckTable = function(range, callback) {
+module.exports.srCheckTable = srCheckTable = function(amountOfPeople, callback) {
 
   let q1 = "SELECT * FROM `restauranttable` AS rt WHERE rt.seatCount BETWEEN ? AND ? AND rt.tableNo NOT IN (SELECT DISTINCT sa.tableNo FROM `ServiceReceiver` AS sr JOIN `SitsAt` AS sa ON sr.groupID = sa.groupID WHERE sr.enterDate IS NOT NULL AND sr.leaveDate IS NULL) ORDER BY rt.seatCount ASC, rt.tableNo ASC;"
 
@@ -195,7 +219,9 @@ callback :function: callback once done
 {NOT YET FINALIZED}
 */
 module.exports.srCheckQueue = srCheckQueue = function(callback) {
+
   let q1 = "SELECT rt.tableNo, rt.seatCount, sr.amountOfPeople, sr.groupID, q.queueID, q.queueNo FROM `RestaurantTable` rt, `ServiceReceiver` sr LEFT JOIN `Queue` q ON sr.groupID=q.groupID WHERE sr.enterDate IS NULL AND rt.seatCount>=sr.amountOfPeople AND (rt.tableNo NOT IN (SELECT DISTINCT sa.tableNo FROM `ServiceReceiver` sr, `SitsAt` sa WHERE sr.enterDate IS NOT NULL AND sr.leaveDate IS NULL AND sr.groupID=sa.groupID)) ORDER BY q.groupID DESC, sr.amountOfPeople ASC, q.queueDate ASC, rt.seatCount ASC LIMIT 1;";
+
   conn.query(q1, (error, results, fields) => {
     if (error) throw error;
     console.log(results[0]);
@@ -273,41 +299,7 @@ module.exports.srDrop = srDrop = function(groupID, callback) {
 }
 
 
-/* Make a ServiceReceiver
-callback :function: callback once done
-Callback Format:
-{"srUUID": STRING_UUID}
-*/
-module.exports.srMakeServiceReceiver = srMakeServiceReceiver = function(amtOfPpl, callback) {
-  let q1 = "INSERT INTO `ServiceReceiver` (`groupID`, `amountOfPeople`, `enterDate`, `leaveDate`) VALUES ?;";
-  let groupID = uuidv4();
-  let data = [groupID, amtOfPpl];
-  conn.query(q1, [
-    [data],
-  ], (error, results, fields) => {
-    if (error) throw error;
-    callback({
-      "groupID": groupID,
-      "affectedRows": results.affectedRows
-    });
-  });
-}
 
-
-module.exports.srMake = srMake = function(groupID, amtOfPpl, callback) {
-  let q1 = "INSERT `ServiceReceiver` (`groupID`, `amountOfPeople`) VALUES ?";
-  conn.query(q1, [
-    [
-      [groupID, amtOfPpl]
-    ]
-  ], (error, results, fields) => {
-    if (error) throw error;
-    callback({
-      "groupID": groupID,
-      "affectedRows": results.affectedRows
-    });
-  });
-}
 
 
 module.exports.srUpdate_enterDate = updateSR_enterDate = function(groupID, enterDate, callback) {
@@ -359,6 +351,21 @@ module.exports.srWaitingQueueCount = srWaitingQueueCount = function(callback) {
     }
   });
 }
+
+
+
+// Drop a customer based on UUID
+router.get('/drop', pathCalled, (req, res, next) => {
+  let groupID = req.query.groupID;
+  if (!groupID) {
+    res.status(400);
+    res.send("No groupID provided");
+    return;
+  }
+  srDrop(groupID, (rtn) => {
+    res.send(rtn);
+  });
+});
 
 
 module.exports = router;

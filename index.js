@@ -40,7 +40,7 @@ app.use(bodyParser.json()); // JSON parser
 app.use("/api", require("./routes/api.js"));
 app.use('/robot', require('./routes/robot.js'));
 app.use('/test', require('./routes/test.js'));
-app.use('/sr', require('./routes/serviceReceiver.js'));
+app.use('/sr', require('./routes/serviceReceiver_cat.js'));
 app.get('/', function(req, res) {
   res.sendFile(__dirname + '/index.html');
 });
