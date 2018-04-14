@@ -124,9 +124,9 @@ module.exports.checkTableCategory = checkTableCategory = function(amtOfPpl, call
 module.exports.checkTable = checkTable = function(tableCategory, callback) {
 
   let q1 = null;
-  let q1_a = "SELECT rt.tableNo, rt.seatCount, rt.positionID FROM `RestaurantTable` rt LEFT JOIN (`SitsAt` sa INNER JOIN `ServiceReceiver` sr ON sa.groupID=sr.groupID) ON rt.tableNo=sa.tableNo WHERE rt.seatCount BETWEEN 1 AND 2 AND sa.groupID IS NULL;";
-  let q1_b = "SELECT rt.tableNo, rt.seatCount, rt.positionID FROM `RestaurantTable` rt LEFT JOIN (`SitsAt` sa INNER JOIN `ServiceReceiver` sr ON sa.groupID=sr.groupID) ON rt.tableNo=sa.tableNo WHERE rt.seatCount BETWEEN 3 AND 4 AND sa.groupID IS NULL;";
-  let q1_c = "SELECT rt.tableNo, rt.seatCount, rt.positionID FROM `RestaurantTable` rt LEFT JOIN (`SitsAt` sa INNER JOIN `ServiceReceiver` sr ON sa.groupID=sr.groupID) ON rt.tableNo=sa.tableNo WHERE rt.seatCount BETWEEN 5 AND 6 AND sa.groupID IS NULL;";
+  let q1_a = "SELECT rt.tableNo, rt.seatCount, rt.positionID FROM `RestaurantTable` rt WHERE rt.seatCount BETWEEN 1 AND 2 AND rt.tableNo NOT IN (SELECT sa.tableNo FROM `SitsAt` sa INNER JOIN `ServiceReceiver` sr ON sa.groupID = sr.groupID AND sr.enterDate IS NOT NULL AND sr.leaveDate IS NULL);";
+  let q1_b = "SELECT rt.tableNo, rt.seatCount, rt.positionID FROM `RestaurantTable` rt WHERE rt.seatCount BETWEEN 3 AND 4 AND rt.tableNo NOT IN (SELECT sa.tableNo FROM `SitsAt` sa INNER JOIN `ServiceReceiver` sr ON sa.groupID = sr.groupID AND sr.enterDate IS NOT NULL AND sr.leaveDate IS NULL);";
+  let q1_c = "SELECT rt.tableNo, rt.seatCount, rt.positionID FROM `RestaurantTable` rt WHERE rt.seatCount BETWEEN 5 AND 6 AND rt.tableNo NOT IN (SELECT sa.tableNo FROM `SitsAt` sa INNER JOIN `ServiceReceiver` sr ON sa.groupID = sr.groupID AND sr.enterDate IS NOT NULL AND sr.leaveDate IS NULL);";
 
   switch (tableCategory){
     case "A":
@@ -181,9 +181,7 @@ module.exports.queueCheck = queueCheck = async function(tableCategory, callback)
 }
 
 
-
-
-
+// Make servicereceiver ID
 module.exports.srMake = srMake = function(groupID, amtOfPpl, callback) {
 
   let q1 = "INSERT `ServiceReceiver` (`groupID`, `amountOfPeople`) VALUES ?";
@@ -341,6 +339,17 @@ module.exports.srUpdate_leaveDate = updateSR_leaveDate = function(groupID, leave
     });
   });
 }
+
+router.get("/srLeft", (req, res, next) => {
+  // 0d2a483b-ed8a-4b8f-9b8c-503c8e35b1e1
+
+  updateSR_leaveDate(req.query.groupID, moment().format(dateTimeTemplate), (data) => {
+    res.send(data);
+  });
+});
+
+
+
 
 /* Get the number of group waiting
 groupID :str: ServiceReceiver group ID

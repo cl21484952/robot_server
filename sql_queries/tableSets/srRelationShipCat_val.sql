@@ -68,16 +68,20 @@ sr.valid=1 -- The service receiver queue is still valid
 */
 
 /*
-SELECT rt.tableNo, rt.seatCount, rt.positionID
+-- Find the available table
+SELECT
+    rt.tableNo,
+    rt.seatCount,
+    rt.positionID
 FROM
- `RestaurantTable` rt
- LEFT JOIN
- (
-  `SitsAt` sa INNER JOIN `ServiceReceiver` sr
-  ON sa.groupID=sr.groupID
- )
- ON rt.tableNo=sa.tableNo
+    `RestaurantTable` rt
 WHERE
- sa.groupID IS NULL AND
- rt.seatCount BETWEEN 1 AND 2
+    rt.seatCount BETWEEN 1 AND 2 AND -- Find table range
+    rt.tableNo NOT IN ( -- Empty Table = All table - Full Table
+        SELECT sa.tableNo -- Find FULL table
+        FROM `SitsAt` sa INNER JOIN `ServiceReceiver` sr
+        ON sa.groupID = sr.groupID AND -- (join)
+        sr.enterDate IS NOT NULL AND -- Entered the restaurant
+        sr.leaveDate IS NULL -- Have not leave the restaurant
+    );
 */
