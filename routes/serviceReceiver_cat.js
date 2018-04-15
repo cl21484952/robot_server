@@ -78,7 +78,7 @@ router.get('/checkTable', pathCalled, (req, res, next) => {
       srMake(uid, amountOfPeople, console.log);
       srSitsAt(uid, data[0].tableNo, console.log);
       updateSR_enterDate(uid, moment().format(dateTimeTemplate), console.log);
-      rtnFormat.tableInfo = data[0];
+      rtnFormat.tableInfo.push(data[0]);
       res.send(rtnFormat);
     } else {
       queueCheck(cate, (data) => {
