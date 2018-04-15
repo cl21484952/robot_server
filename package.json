@@ -17,7 +17,8 @@
     "socket.io": "*",
     "moment": "*",
     "mocha": "*",
-    "chai": "*"
+    "chai": "*",
+    "cors": "*"
   },
   "author": "",
   "license": "ISC"

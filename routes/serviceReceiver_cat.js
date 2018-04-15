@@ -81,8 +81,10 @@ router.get('/checkTable', pathCalled, (req, res, next) => {
       rtnFormat.tableInfo = data[0];
       res.send(rtnFormat);
     } else {
-      queueCheck(cate, (data)=>{rtnFormat.waitingQ = data;
-      res.send(rtnFormat);});
+      queueCheck(cate, (data) => {
+        rtnFormat.waitingQ = data;
+        res.send(rtnFormat);
+      });
     }
   });
 });
@@ -128,7 +130,7 @@ module.exports.checkTable = checkTable = function(tableCategory, callback) {
   let q1_b = "SELECT rt.tableNo, rt.seatCount, rt.positionID FROM `RestaurantTable` rt WHERE rt.seatCount BETWEEN 3 AND 4 AND rt.tableNo NOT IN (SELECT sa.tableNo FROM `SitsAt` sa INNER JOIN `ServiceReceiver` sr ON sa.groupID = sr.groupID AND sr.enterDate IS NOT NULL AND sr.leaveDate IS NULL);";
   let q1_c = "SELECT rt.tableNo, rt.seatCount, rt.positionID FROM `RestaurantTable` rt WHERE rt.seatCount BETWEEN 5 AND 6 AND rt.tableNo NOT IN (SELECT sa.tableNo FROM `SitsAt` sa INNER JOIN `ServiceReceiver` sr ON sa.groupID = sr.groupID AND sr.enterDate IS NOT NULL AND sr.leaveDate IS NULL);";
 
-  switch (tableCategory){
+  switch (tableCategory) {
     case "A":
       q1 = q1_a;
       break;
@@ -151,14 +153,14 @@ module.exports.checkTable = checkTable = function(tableCategory, callback) {
 
 
 // Check the number of waiting queue
-module.exports.queueCheck = queueCheck = async function(tableCategory, callback){
+module.exports.queueCheck = queueCheck = async function(tableCategory, callback) {
 
   let q1 = null;
   let q1_a = "SELECT COUNT(*) wq FROM `queue_a` qa JOIN `servicereceiver` sr ON qa.groupID = sr.groupID WHERE sr.enterDate IS NULL AND sr.valid=1";
   let q1_b = "SELECT COUNT(*) wq FROM `queue_b` qa JOIN `servicereceiver` sr ON qa.groupID = sr.groupID WHERE sr.enterDate IS NULL AND sr.valid=1";
   let q1_c = "SELECT COUNT(*) wq FROM `queue_c` qa JOIN `servicereceiver` sr ON qa.groupID = sr.groupID WHERE sr.enterDate IS NULL AND sr.valid=1";
 
-  switch (tableCategory){
+  switch (tableCategory) {
     case "A":
       q1 = q1_a;
       break;
@@ -213,7 +215,7 @@ module.exports.srSitsAt = srSitsAt = function(groupID, tableNo, callback) {
 }
 
 
-/* Check if there is table
+/* DEPRECATED Check if there is table
 callback :function: callback once done
 {NOT YET FINALIZED}
 */
@@ -228,7 +230,7 @@ module.exports.srCheckTable = srCheckTable = function(amountOfPeople, callback) 
 }
 
 
-/* Check if there is queue
+/* DEPRECATED Check if there is queue
 Check if there is queue available to be called
 callback :function: callback once done
 {NOT YET FINALIZED}

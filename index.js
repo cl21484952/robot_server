@@ -13,6 +13,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const socketIo = require('socket.io');
 const moment = require('moment');
+const cors = require('cors');
 
 // Custom Scripts
 const cq = require("./commonQuery.js");
@@ -36,6 +37,7 @@ let logger = utils.logger;
 // Express.js Setup
 const app = express();
 app.use(bodyParser.json()); // JSON parser
+app.use(cors()); // Allow cross domain access
 // Routing, Pages & Modularity
 app.use("/api", require("./routes/api.js"));
 app.use('/robot', require('./routes/robot.js'));
