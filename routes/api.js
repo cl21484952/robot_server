@@ -3,19 +3,12 @@ const express = require("express");
 
 // Custom Script
 const utils = require("../utils.js");
-const cq = require("../commonQuery.js");
 const conn = require("../databaseSetup.js");
 // --- --- ---
 const router = express.Router();
 const pathCalled = utils.pathCalled;
 const notImp = utils.notImplemented;
 
-
-
-// Used for testing purpose
-// router.get('/test', pathCalled, (req, res, next) => {
-//   res.send("called test");
-// });
 
 // Get the name of the restaurant
 router.get('/restaurantName', pathCalled, (req, res, next) => {
@@ -41,7 +34,7 @@ router.get('/getMenuItem', pathCalled, (req, res, next) => {
 
   let mVer = req.query.mVer;
 
-  if (!mVer){ // Version not provided
+  if (!mVer) { // Version not provided
     menuItemVersionLatest((data) => {
       res.send(data);
     });
@@ -75,13 +68,12 @@ function menuItemVersionLatest(callback) {
 }
 
 
-
 // Demonstrate login
 router.get('/loginDemo', pathCalled, (req, res, next) => {
   let userID = req.query.id;
   let userPassword = req.query.password;
   if (userID && userPassword) {
-    cq.demoLogin(userID, userPassword, (canLogin) => {
+    demoLogin(userID, userPassword, (canLogin) => {
       res.send(canLogin);
     });
   } else {
@@ -90,5 +82,20 @@ router.get('/loginDemo', pathCalled, (req, res, next) => {
     });
   }
 });
+
+function demoLogin(uID, uPW, callback) {
+  let q = 'SELECT * FROM SystemAdministrator WHERE ID=?;';
+  conn.query(q, [uID], (error, results, fields) => {
+    if (error) throw error;
+    if (!results) callback(false);
+    let DB_ID = results[0].ID;
+    let DB_PASSWORD = results[0].password;
+    if (DB_ID === uID && DB_PASSWORD === uPW) {
+      callback(true);
+    } else {
+      callback(false);
+    }
+  });
+}
 
 module.exports = router;

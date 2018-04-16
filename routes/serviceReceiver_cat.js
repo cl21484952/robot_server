@@ -1,19 +1,21 @@
+// External Library
 const express = require("express");
 const moment = require('moment');
 const uuidv4 = require('uuid/v4');
 const mysql = require('mysql');
-const router = express.Router();
 
+// Custom Script
 const utils = require("../utils.js");
-const pathCalled = utils.pathCalled;
-const notImp = utils.notImplemented;
-const pathDep = utils.pathDeprecated;
-
-
 const conn = require("../databaseSetup.js");
 const cq = require("../commonQuery.js");
 
+// --- --- ---
+
+const pathCalled = utils.pathCalled;
+const notImp = utils.notImplemented;
+const pathDep = utils.pathDeprecated;
 const dateTimeTemplate = 'YYYY-MM-DD HH:mm:ss';
+const router = express.Router();
 
 const category = {
   "category_A": [1, 2],
@@ -95,7 +97,7 @@ groupID :string: UUID of the groupID
 Optional Query -
 leaveDate :string: time which the customer left
 */
-router.get("/srLeft", (req, res, next) => {
+router.get('/srLeft', (req, res, next) => {
 
   let groupID = req.query.groupID || null;
   let leaveDatetime = req.query.leaveDate || moment().format(dateTimeTemplate);
@@ -125,7 +127,7 @@ router.get("/srLeft", (req, res, next) => {
 Query -
 groupID :string: UUID of the groupID
 */
-router.get('/srInvalidate', pathCalled, (req, res, next) => {
+router.get('/srInvalid', pathCalled, (req, res, next) => {
 
   let groupID = req.query.groupID;
 
@@ -261,10 +263,10 @@ module.exports.srSitsAt = srSitsAt = function(groupID, tableNo, callback) {
 }
 
 
-// Check queue
-module.exports.checkCallingQueue = checkCallingQueue = function(callback) {
-
-}
+// // Check queue
+// module.exports.checkCallingQueue = checkCallingQueue = function(callback) {
+//
+// }
 
 
 /* Make queue base on, groupID & queue number
@@ -342,6 +344,10 @@ module.exports.srUpdate_leaveDate = updateSR_leaveDate = function(groupID, leave
   });
 }
 
+
+/*
+DEPRECATED
+*/
 
 
 /* DEPRECATED Get the number of group waiting
@@ -426,7 +432,6 @@ module.exports.srNextQueueNo = srNextQueueNo = function(callback) {
     }
   });
 }
-
 
 
 
