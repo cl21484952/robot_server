@@ -3,58 +3,78 @@ const express = require("express");
 
 // Custom Script
 const utils = require("../utils.js");
+const cq = require("../commonQuery.js");
+const conn = require("../databaseSetup.js");
 // --- --- ---
 const router = express.Router();
 const pathCalled = utils.pathCalled;
 const notImp = utils.notImplemented;
 
-const cq = require("../commonQuery.js");
+
 
 // Used for testing purpose
-router.get('/test', pathCalled, (req, res, next) => {
-  res.send("called test");
-});
+// router.get('/test', pathCalled, (req, res, next) => {
+//   res.send("called test");
+// });
 
 // Get the name of the restaurant
 router.get('/restaurantName', pathCalled, (req, res, next) => {
-  cq.getRestaurantName((dataList) => {
-    res.send(dataList[0]);
+  restaurantNameGet((data) => {
+    res.send(data);
   });
 });
 
-// Get all available version of menu
-router.get('/menus', pathCalled, (req, res, next) => {
-  cq.getMenus((dataList) => {
-    res.send(dataList);
+function restaurantNameGet(callback) {
+  let q1 = 'SELECT * FROM `Restaurant`;';
+  conn.queryDB(q1, (error, results, fields) => {
+    if (error) throw error;
+    callback(results);
   });
-});
+}
 
-// Get all available menu
-router.get('/items', pathCalled, (req, res, next) => {
-  cq.getItems((dataList) => {
-    res.send(dataList);
-  });
-});
 
-// Get a menu of a specific version
-router.get('/menuVersion', pathCalled, (req, res, next) => {
-  if (req.query.version) {
-    cq.getMenuVersion(req.query.version, (dataList) => {
-      res.send(dataList);
-    });
-  } else {
-    res.status(500).send({
-      'error': 'No version provided'
+/* Get a menu of a specific version
+Optional Query -
+mVer :integer: Version of the number
+*/
+router.get('/getMenuItem', pathCalled, (req, res, next) => {
+
+  let mVer = req.query.mVer;
+
+  if (!mVer){ // Version not provided
+    menuItemVersionLatest((data) => {
+      res.send(data);
     });
   }
-});
 
-// Get Latest verion of the menu item list
-router.get('/menuLatest', pathCalled, (req, res, next) => {
-  cq.getMenuLatest((dataList) => {
-    res.send(dataList);
+  mVer = parseInt(mVer);
+  if (typeof mVer !== "number") {
+    res.status(400);
+    res.send({
+      "error": "Malformed menu version"
+    });
+  }
+
+  menuItemVersion(mVer, (data) => {
+    res.send(data);
   });
 });
+
+function menuItemVersion(mVer, callback) {
+  let q1 = 'SELECT * FROM `item` i JOIN `contain` c JOIN `menu` m ON i.itemNo=c.itemNo AND c.version=m.version WHERE m.version=?;';
+  conn.query(q1, (error, results, fields) => {
+    callback(results);
+  });
+}
+
+function menuItemVersionLatest(callback) {
+  let q1 = 'SELECT * FROM `item` i JOIN `contain` c JOIN `menu` m ON i.itemNo=c.itemNo AND c.version=m.version WHERE m.version=(SELECT MAX(version) FROM `contain`);';
+  conn.query(q1, (error, results, fields) => {
+    callback(results);
+  });
+}
+
+
 
 // Demonstrate login
 router.get('/loginDemo', pathCalled, (req, res, next) => {

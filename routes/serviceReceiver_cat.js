@@ -35,7 +35,6 @@ Response Format: (JSON)
 }
 */
 // NOTE if not number, NaN is returned
-// NOTE Partially Implemented, missing no table
 router.get('/checkTable', pathCalled, (req, res, next) => {
 
   const MAX_SEATCOUNT = 6;
@@ -68,7 +67,6 @@ router.get('/checkTable', pathCalled, (req, res, next) => {
     return;
   }
 
-
   let cate = checkTableCategory(amountOfPeople);
 
   checkTable(cate, (data) => {
@@ -83,9 +81,62 @@ router.get('/checkTable', pathCalled, (req, res, next) => {
     } else {
       queueCheck(cate, (data) => {
         rtnFormat.waitingQ = data;
+        console.log(rtnFormat);
         res.send(rtnFormat);
       });
     }
+  });
+});
+
+
+/* Service Receiver left the Restaurant
+Query -
+groupID :string: UUID of the groupID
+Optional Query -
+leaveDate :string: time which the customer left
+*/
+router.get("/srLeft", (req, res, next) => {
+
+  let groupID = req.query.groupID || null;
+  let leaveDatetime = req.query.leaveDate || moment().format(dateTimeTemplate);
+
+  if (!groupID || groupID.length !== 36) {
+    res.status(400);
+    res.send({
+      "error": "Malformed groupID"
+    });
+    return;
+  }
+  if (!moment(leaveDatetime, dateTimeTemplate).isValid()) {
+    res.status(400);
+    res.send({
+      "error": "Invalid date, valid format: " + dateTimeTemplate
+    });
+    return;
+  }
+
+  updateSR_leaveDate(groupID, leaveDatetime, (data) => {
+    res.send(data);
+  });
+});
+
+
+/* Invalidate a SR
+Query -
+groupID :string: UUID of the groupID
+*/
+router.get('/srInvalidate', pathCalled, (req, res, next) => {
+
+  let groupID = req.query.groupID;
+
+  if (!groupID || groupID.length !== 36) {
+    res.status(400);
+    res.send("No groupID provided or Malformed");
+    return;
+  }
+
+  srInvalidate(groupID, (rtn) => {
+    res.send(rtn);
   });
 });
 
@@ -115,11 +166,6 @@ module.exports.checkTableCategory = checkTableCategory = function(amtOfPpl, call
 
   return tableCategory;
 }
-
-
-// router.get("/test", (req, res, next)=>{
-//   checkTable(req.query.category, (data)=>{res.send(data);});
-// });
 
 
 // Check if the table of the given category is available
@@ -215,62 +261,9 @@ module.exports.srSitsAt = srSitsAt = function(groupID, tableNo, callback) {
 }
 
 
-/* DEPRECATED Check if there is table
-callback :function: callback once done
-{NOT YET FINALIZED}
-*/
-module.exports.srCheckTable = srCheckTable = function(amountOfPeople, callback) {
+// Check queue
+module.exports.checkCallingQueue = checkCallingQueue = function(callback) {
 
-  let q1 = "SELECT * FROM `restauranttable` AS rt WHERE rt.seatCount BETWEEN ? AND ? AND rt.tableNo NOT IN (SELECT DISTINCT sa.tableNo FROM `ServiceReceiver` AS sr JOIN `SitsAt` AS sa ON sr.groupID = sa.groupID WHERE sr.enterDate IS NOT NULL AND sr.leaveDate IS NULL) ORDER BY rt.seatCount ASC, rt.tableNo ASC;"
-
-  conn.query(q1, range, (error, results, fields) => {
-    if (error) throw error;
-    callback(results);
-  });
-}
-
-
-/* DEPRECATED Check if there is queue
-Check if there is queue available to be called
-callback :function: callback once done
-{NOT YET FINALIZED}
-*/
-module.exports.srCheckQueue = srCheckQueue = function(callback) {
-
-  let q1 = "SELECT rt.tableNo, rt.seatCount, sr.amountOfPeople, sr.groupID, q.queueID, q.queueNo FROM `RestaurantTable` rt, `ServiceReceiver` sr LEFT JOIN `Queue` q ON sr.groupID=q.groupID WHERE sr.enterDate IS NULL AND rt.seatCount>=sr.amountOfPeople AND (rt.tableNo NOT IN (SELECT DISTINCT sa.tableNo FROM `ServiceReceiver` sr, `SitsAt` sa WHERE sr.enterDate IS NOT NULL AND sr.leaveDate IS NULL AND sr.groupID=sa.groupID)) ORDER BY q.groupID DESC, sr.amountOfPeople ASC, q.queueDate ASC, rt.seatCount ASC LIMIT 1;";
-
-  conn.query(q1, (error, results, fields) => {
-    if (error) throw error;
-    console.log(results[0]);
-    callback(results[0]);
-  });
-}
-
-
-/* Get the next queue number
-callback :function: callback once done
-Callback Format:
-{"nextQ": NEXT_QUEUE_NUMBER}
-*/
-module.exports.srNextQueueNo = srNextQueueNo = function(callback) {
-  let q1 = 'SELECT MAX(`queueNo`)+1 nextQ FROM `Queue` WHERE `queueDate` BETWEEN ? AND ?;';
-  //let today = moment().format('YYYY-MM-DD');
-  let today = "2018-03-28";
-  let start = `${today} 00:00:00`;
-  let end = `${today} 23:59:59`;
-  let data = [start, end];
-  conn.query(q1, [data], (error, results, fields) => {
-    if (error) throw error;
-    if (typeof results.nextQ !== 'integer') {
-      callback({
-        "nextQ": 1
-      });
-    } else {
-      callback({
-        "nextQ": results.nextQ
-      });
-    }
-  });
 }
 
 
@@ -305,20 +298,22 @@ Callback Format:
 {"affectedRows": NUMBER_OF_ROWS}
 NOTE: Auto drop queue as CASCADE is used
 */
-module.exports.srDrop = srDrop = function(groupID, callback) {
-  let q1 = 'DELETE FROM `ServiceReceiver` WHERE groupID=?;';
-  conn.query(q1, [groupID], (error, results, fields) => {
+module.exports.srInvalidate = srInvalidate = function(groupID, callback) {
+  let q1 = 'UPDATE `servicereceiver` SET `enterDate`=? `valid`=? WHERE `groupID`=?;';
+  conn.query(q1, [null, 0, groupID], (error, results, fields) => {
     if (error) throw error;
     callback({
-      "affectedRows": results.affectedRows
+      "affectedRows": results[0].affectedRows
     });
   });
 }
 
 
-
-
-
+/* Update when SR enter restaurant
+Paremeters:
+groupID :string: the UUID for the SR
+enterDate :string: the date time to be inserted with
+*/
 module.exports.srUpdate_enterDate = updateSR_enterDate = function(groupID, enterDate, callback) {
   let q1 = "UPDATE `ServiceReceiver` SET `enterDate`=? WHERE `groupID`=?;";
   conn.query(q1, [enterDate, groupID], (error, results, fields) => {
@@ -331,6 +326,11 @@ module.exports.srUpdate_enterDate = updateSR_enterDate = function(groupID, enter
 }
 
 
+/* Update when SR leaves restaurant
+Paremeters:
+groupID :string: the UUID for the SR
+enterDate :string: the date time to be inserted with
+*/
 module.exports.srUpdate_leaveDate = updateSR_leaveDate = function(groupID, leaveDate, callback) {
   let q1 = "UPDATE `ServiceReceiver` SET `leaveDate`=? WHERE `groupID`=?;";
   conn.query(q1, [leaveDate, groupID], (error, results, fields) => {
@@ -342,18 +342,9 @@ module.exports.srUpdate_leaveDate = updateSR_leaveDate = function(groupID, leave
   });
 }
 
-router.get("/srLeft", (req, res, next) => {
-  // 0d2a483b-ed8a-4b8f-9b8c-503c8e35b1e1
-
-  updateSR_leaveDate(req.query.groupID, moment().format(dateTimeTemplate), (data) => {
-    res.send(data);
-  });
-});
 
 
-
-
-/* Get the number of group waiting
+/* DEPRECATED Get the number of group waiting
 groupID :str: ServiceReceiver group ID
 callback :function: callback once done
 Callback Format:
@@ -380,20 +371,63 @@ module.exports.srWaitingQueueCount = srWaitingQueueCount = function(callback) {
   });
 }
 
+/* DEPRECATED Check if there is table
+callback :function: callback once done
+{NOT YET FINALIZED}
+*/
+module.exports.srCheckTable = srCheckTable = function(amountOfPeople, callback) {
 
+  let q1 = "SELECT * FROM `restauranttable` AS rt WHERE rt.seatCount BETWEEN ? AND ? AND rt.tableNo NOT IN (SELECT DISTINCT sa.tableNo FROM `ServiceReceiver` AS sr JOIN `SitsAt` AS sa ON sr.groupID = sa.groupID WHERE sr.enterDate IS NOT NULL AND sr.leaveDate IS NULL) ORDER BY rt.seatCount ASC, rt.tableNo ASC;"
 
-// Drop a customer based on UUID
-router.get('/drop', pathCalled, (req, res, next) => {
-  let groupID = req.query.groupID;
-  if (!groupID) {
-    res.status(400);
-    res.send("No groupID provided");
-    return;
-  }
-  srDrop(groupID, (rtn) => {
-    res.send(rtn);
+  conn.query(q1, range, (error, results, fields) => {
+    if (error) throw error;
+    callback(results);
   });
-});
+}
+
+/* DEPRECATED Check if there is queue
+Check if there is queue available to be called
+callback :function: callback once done
+{NOT YET FINALIZED}
+*/
+module.exports.srCheckQueue = srCheckQueue = function(callback) {
+
+  let q1 = "SELECT rt.tableNo, rt.seatCount, sr.amountOfPeople, sr.groupID, q.queueID, q.queueNo FROM `RestaurantTable` rt, `ServiceReceiver` sr LEFT JOIN `Queue` q ON sr.groupID=q.groupID WHERE sr.enterDate IS NULL AND rt.seatCount>=sr.amountOfPeople AND (rt.tableNo NOT IN (SELECT DISTINCT sa.tableNo FROM `ServiceReceiver` sr, `SitsAt` sa WHERE sr.enterDate IS NOT NULL AND sr.leaveDate IS NULL AND sr.groupID=sa.groupID)) ORDER BY q.groupID DESC, sr.amountOfPeople ASC, q.queueDate ASC, rt.seatCount ASC LIMIT 1;";
+
+  conn.query(q1, (error, results, fields) => {
+    if (error) throw error;
+    console.log(results[0]);
+    callback(results[0]);
+  });
+}
+
+/* DEPRECATED Get the next queue number
+callback :function: callback once done
+Callback Format:
+{"nextQ": NEXT_QUEUE_NUMBER}
+*/
+module.exports.srNextQueueNo = srNextQueueNo = function(callback) {
+  let q1 = 'SELECT MAX(`queueNo`)+1 nextQ FROM `Queue` WHERE `queueDate` BETWEEN ? AND ?;';
+  //let today = moment().format('YYYY-MM-DD');
+  let today = "2018-03-28";
+  let start = `${today} 00:00:00`;
+  let end = `${today} 23:59:59`;
+  let data = [start, end];
+  conn.query(q1, [data], (error, results, fields) => {
+    if (error) throw error;
+    if (typeof results.nextQ !== 'integer') {
+      callback({
+        "nextQ": 1
+      });
+    } else {
+      callback({
+        "nextQ": results.nextQ
+      });
+    }
+  });
+}
+
+
 
 
 module.exports = router;
