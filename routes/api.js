@@ -38,10 +38,11 @@ router.get('/getMenuItem', pathCalled, (req, res, next) => {
     menuItemVersionLatest((data) => {
       res.send(data);
     });
+    return;
   }
 
   mVer = parseInt(mVer);
-  if (typeof mVer !== "number") {
+  if (typeof mVer === "NaN") {
     res.status(400);
     res.send({
       "error": "Malformed menu version"
@@ -55,7 +56,7 @@ router.get('/getMenuItem', pathCalled, (req, res, next) => {
 
 function menuItemVersion(mVer, callback) {
   let q1 = 'SELECT * FROM `item` i JOIN `contain` c JOIN `menu` m ON i.itemNo=c.itemNo AND c.version=m.version WHERE m.version=?;';
-  conn.query(q1, (error, results, fields) => {
+  conn.query(q1, [mVer], (error, results, fields) => {
     callback(results);
   });
 }

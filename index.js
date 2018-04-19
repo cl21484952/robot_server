@@ -46,7 +46,7 @@ app.use('/sr', require('./routes/serviceReceiver_cat.js'));
 app.get('/', function(req, res) {
   res.sendFile(__dirname + '/index.html');
 });
-app.use(express.static(__dirname + '/menuItemImg'));
+app.use('/menuItemImg', express.static(__dirname + '/menuItemImg'));
 
 // REST api
 const server = http.Server(app);
