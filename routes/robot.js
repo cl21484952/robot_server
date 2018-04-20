@@ -44,17 +44,17 @@ router.get('/updateStatus', pathCalled, (req, res, next) => {
   let rstatus = req.query.rstatus || null;
   let robotUUID = req.query.robotUUID || null;
 
-  if (!robotUUID || robotUUID.length === 36) {
+  if (!robotUUID || robotUUID.length !== 36) {
     res.status(400);
     res.send({
-      "error": "Malformed robot UUID"
+      "error": "UUID not provided or Malformed robot UUID"
     });
     return;
   }
   if (!rstatus || typeof rstatus === "number") {
     res.status(400);
     res.send({
-      "error": "Malformed robot status"
+      "error": "status not provided or Malformed robot status"
     });
     return;
   }
