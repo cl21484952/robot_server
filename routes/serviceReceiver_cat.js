@@ -65,31 +65,81 @@ router.get('/checkTable', pathCalled, (req, res, next) => {
   if (amountOfPeople > MAX_SEATCOUNT) {
     res.status(400);
     rtnFormat.error = "Exceed maximum supported amount";
+    rtnFormat.exceedMaxSeatCount = true;
     res.send(rtnFormat);
     return;
   }
 
-  let cate = checkTableCategory(amountOfPeople);
-
-  checkTable(cate, (data) => {
-    if (data.length > 0) {
-      let uid = uuidv4();
-      console.log(uid);
-      srMake(uid, amountOfPeople, console.log);
-      srSitsAt(uid, data[0].tableNo, console.log);
-      updateSR_enterDate(uid, moment().format(dateTimeTemplate), console.log);
-      rtnFormat.tableInfo.push(data[0]);
-      res.send(rtnFormat);
-    } else {
-      queueCheck(cate, (data) => {
-        rtnFormat.waitingQ = data;
-        console.log(rtnFormat);
-        res.send(rtnFormat);
-      });
+  conn.query("CALL tableChecking(?);", [amountOfPeople], (error, results, fields)=>{
+    if (error) throw error;
+    rtnFormat["error"] = results[0][0]["error"];
+    if (results[0][0]['tableNo'] > 0){
+      rtnFormat.tableInfo.push(results[0][0]['tableNo']);
     }
+    rtnFormat.waitingQ = results[0][0]['waitingQueue'];
+    res.send(rtnFormat);
   });
+
+  // let cate = checkTableCategory(amountOfPeople);
+  //
+  // checkTable(cate, (data) => {
+  //   if (data.length > 0) {
+  //     let uid = uuidv4();
+  //     console.log(uid);
+  //     srMake(uid, amountOfPeople, console.log);
+  //     srSitsAt(uid, data[0].tableNo, console.log);
+  //     updateSR_enterDate(uid, moment().format(dateTimeTemplate), console.log);
+  //     rtnFormat.tableInfo.push(data[0]);
+  //     res.send(rtnFormat);
+  //   } else {
+  //     queueCheck(cate, (data) => {
+  //       rtnFormat.waitingQ = data;
+  //       console.log(rtnFormat);
+  //       res.send(rtnFormat);
+  //     });
+  //   }
+  // });
 });
 
+
+router.get('/requestQueue', pathCalled, (req, res, next) => {
+
+  const MAX_SEATCOUNT = 6;
+  let rtnFormat = {
+    'error': null, // null imply no problem
+    'exceedMaxSeatCount': false,
+    'queueNo': -1 // -1 imply information not given
+  };
+
+  let amountOfPeople = parseInt(req.query.amountOfPeople);
+
+  // Client query checking
+  if (!amountOfPeople || typeof amountOfPeople !== "number") {
+    res.status(400);
+    rtnFormat.error = "Provided amount of people value have problem :D";
+    res.send(rtnFormat);
+    return;
+  }
+  if (amountOfPeople <= 0) {
+    res.status(400);
+    rtnFormat.error = "Cannot have 0 or less customer";
+    res.send(rtnFormat);
+    return;
+  }
+  if (amountOfPeople > MAX_SEATCOUNT) {
+    res.status(400);
+    rtnFormat.error = "Exceed maximum supported amount";
+    rtnFormat.exceedMaxSeatCount = true;
+    res.send(rtnFormat);
+    return;
+  }
+
+  conn.query("SELECT requestQueue(?) AS queueNo;", [amountOfPeople], (error, results, fields)=>{
+    if (error) throw error;
+    rtnFormat.queueNo = results[0][0].queueNo;
+    res.send(rtnFormat);
+  });
+});
 
 /* Service Receiver left the Restaurant
 Query -

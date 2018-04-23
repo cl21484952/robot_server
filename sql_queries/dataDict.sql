@@ -156,13 +156,17 @@ BEGIN
 END$$
 DELIMITER ;
 
-
+/* Check if there is free table available
+Returns -1 if there is not table available
+Returns NULL if input category is invalid
+*/
 DELIMITER $$
-CREATE PROCEDURE checkTable(
+CREATE FUNCTION checkTable(
     cate VARCHAR(1) CHARSET utf8
-)
-NOT DETERMINISTIC
+) RETURNS INTEGER
+NOT DETERMINISTIC READS SQL DATA
 BEGIN
+    DECLARE tableNum INTEGER DEFAULT NULL;
     DECLARE startRange INTEGER(2) DEFAULT NULL;
     DECLARE endRange INTEGER(2) DEFAULT NULL;
     CASE `cate`
@@ -176,15 +180,58 @@ BEGIN
             SET startRange = 5;
             SET endRange = 6;
         ELSE
-            SELECT "Outside valid range";
+            RETURN -1;
     END CASE;
     -- Select
-    SELECT * FROM restauranttable rt
+    -- SET tableNum = (SELECT rt.tableNo
+    SELECT rt.tableNo INTO tableNum
+    FROM restauranttable rt
     WHERE
         rt.seatCount BETWEEN startRange AND endRange AND
         rt.tableNo NOT IN(
         SELECT sa.tableNo
         FROM sitsAt sa, servicereceiver sr
-        WHERE sa.groupID=sr.groupID);
+        WHERE sa.groupID=sr.groupID)
+    ORDER BY rt.tableNo ASC
+    LIMIT 1;
+    RETURN tableNum;
+END$$
+DELIMITER ;
+
+
+/* Check if there is free table available
+Returns -1 if there is not table available
+Returns NULL if input category is invalid
+*/
+DELIMITER $$
+CREATE PROCEDURE `tableChecking3`
+(IN `amountOfPeople` INT(2))
+NOT DETERMINISTIC
+CONTAINS SQL
+proc:BEGIN
+    DECLARE cate VARCHAR(1);
+    DECLARE tableNo INTEGER;
+    DECLARE groupID VARCHAR(36) DEFAULT NULL;
+    DECLARE waitingQueue INTEGER DEFAULT -1;
+    DECLARE error VARCHAR(255);
+
+    SELECT checkTableCategory(amountOfPeople) INTO cate;
+
+    IF (cate = 'Z' OR cate = 'X') THEN
+        SET error = "Invalid range";
+    ELSE
+    	SELECT checkTable(cate) INTO tableNo;
+        IF (tableNo > 0) THEN
+        BEGIN
+            SELECT srMake(amountOfPeople) INTO groupID;
+            CALL sitAtAndUpdate(groupID, tableNo);
+        END;
+        ELSE
+            SELECT queueCheck(cate) INTO waitingQueue;
+        END IF;
+    END IF;
+
+    SELECT error, tableNo, waitingQueue;
+
 END$$
 DELIMITER ;
