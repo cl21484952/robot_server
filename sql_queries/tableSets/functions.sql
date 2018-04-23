@@ -49,28 +49,46 @@ CREATE PROCEDURE `ptest4`(
 )
 BEGIN
 	DECLARE cate VARCHAR(1);
-    DECLARE waitingQueue INTEGER;
+  DECLARE waitingQueue INTEGER;
 
-    SET cate = amountCategory(`amountOfPeople`);
+  SET cate = amountCategory(`amountOfPeople`);
 
-    SELECT *
-    FROM `restauranttable` rt
-    WHERE rt.tableNo NOT IN (
-    	SELECT *
-    	FROM `sitsAt` sa INNER JOIN `servicereceiver` AS `sr`
-    	ON sa.groupID=sr.groupID
-    ) AND rt.seatCount BETWEEN 1 AND 2;
+  SELECT *
+  FROM `restauranttable` rt
+  WHERE rt.tableNo NOT IN (
+  	SELECT *
+  	FROM `sitsAt` sa INNER JOIN `servicereceiver` AS `sr`
+  	ON sa.groupID=sr.groupID
+  ) AND rt.seatCount BETWEEN 1 AND 2;
 
-    SET waitingQueue = (
-        SELECT COUNT(*)
-    	FROM `queueA` AS `q` INNER JOIN `servicereceiver` AS `sr`
-        	ON q.groupID=sr.groupID
-    	WHERE
-            `q`.`queueCate`=cate AND -- Queue with category
-            `sr`.valid=1 AND -- Valid SR
-        	sr.enterDate IS NULL AND -- Entered
-        	sr.leaveDate IS NOT NULL -- Not yet left
-    );
-    SELECT waitingQueue;
+  SET waitingQueue = (
+      SELECT COUNT(*)
+  	FROM `queueA` AS `q` INNER JOIN `servicereceiver` AS `sr`
+      	ON q.groupID=sr.groupID
+  	WHERE
+          `q`.`queueCate`=cate AND -- Queue with category
+          `sr`.valid=1 AND -- Valid SR
+      	sr.enterDate IS NULL AND -- Entered
+      	sr.leaveDate IS NOT NULL -- Not yet left
+  );
+  SELECT waitingQueue;
+END$$
+DELIMITER ;
+
+
+DELIMITER $$
+CREATE PROCEDURE `ptest4`()
+BEGIN
+  DECLARE waitingQueue INTEGER DEFAULT 1;
+
+  SELECT *
+  FROM `restauranttable` rt
+  WHERE rt.tableNo NOT IN (
+  	SELECT sa.tableNo
+  	FROM `sitsAt` sa INNER JOIN `servicereceiver` AS `sr`
+  	ON sa.groupID=sr.groupID
+  ) AND rt.seatCount BETWEEN 1 AND 2;
+
+  SELECT waitingQueue;
 END$$
 DELIMITER ;
