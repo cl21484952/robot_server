@@ -235,3 +235,151 @@ proc:BEGIN
 
 END$$
 DELIMITER ;
+
+
+-- Select queue which are waiting
+SELECT *
+FROM
+Queue q LEFT JOIN servicereceiver sr ON sr.groupID=q.groupID
+WHERE
+	sr.enterDate IS NULL -- Select waiting queue;
+	sr.valid=1 -- Still valid
+;
+
+-- Select tables which are free
+SELECT *
+FROM restauranttable rt
+WHERE rt.tableNo NOT IN -- Table which is free
+  (SELECT DISTINCT sa.tableNo -- Table that is full
+  FROM `ServiceReceiver` sr, `SitsAt` sa
+  WHERE sr.enterDate IS NOT NULL AND -- Customer has table
+  sr.leaveDate IS NULL AND -- Customer has not left
+  sr.groupID=sa.groupID) -- JOIN
+;
+
+-- Select queue aligned with table
+SELECT *
+FROM Queue q, RestaurantTable rt
+WHERE
+	-- q.queueID IN SELECT waitingQueue() AND
+	q.queueID IN
+		(SELECT q.queueID
+		FROM
+		Queue q LEFT JOIN servicereceiver sr ON sr.groupID=q.groupID
+		WHERE
+			sr.enterDate IS NULL AND -- Select waiting queue;
+			sr.valid=1 -- Still valid
+		) AND
+	-- rt.tableNo IN SELECT freeTables() AND
+	rt.tableNo IN
+		(SELECT rt.tableNo
+		FROM restauranttable rt
+		WHERE rt.tableNo NOT IN -- Table which is free
+		  (SELECT DISTINCT sa.tableNo -- Table that is full
+		  FROM `ServiceReceiver` sr, `SitsAt` sa
+		  WHERE sr.enterDate IS NOT NULL AND -- Customer has table
+		  sr.leaveDate IS NULL AND -- Customer has not left
+		  sr.groupID=sa.groupID) -- JOIN
+		) AND
+	q.queueCate=checkTableCategory(rt.seatCount)
+ORDER BY
+	q.queueDate ASC
+;
+
+
+DELIMITER $$
+CREATE PROCEDURE `checkWaitingQueueTest`()
+NOT DETERMINISTIC
+CONTAINS SQL
+proc:BEGIN
+  SELECT q.groupID, CONCAT(q.queueCate, q.queueNo) AS queueTicket, rt.tableNo, rt.positionID
+  FROM queue q, RestaurantTable rt
+  WHERE
+    -- q.queueID IN SELECT waitingQueue() AND
+    q.queueID IN
+      (SELECT q.queueID
+      FROM
+      Queue q LEFT JOIN servicereceiver sr ON sr.groupID=q.groupID
+      WHERE
+        sr.enterDate IS NULL AND -- Select waiting queue;
+        sr.valid=1 -- Still valid
+      ) AND
+    -- rt.tableNo IN SELECT freeTables() AND
+    rt.tableNo IN
+      (SELECT rt.tableNo
+      FROM restauranttable rt
+      WHERE rt.tableNo NOT IN -- Table which is free
+        (SELECT DISTINCT sa.tableNo -- Table that is full
+        FROM `ServiceReceiver` sr, `SitsAt` sa
+        WHERE sr.enterDate IS NOT NULL AND -- Customer has table
+        sr.leaveDate IS NULL AND -- Customer has not left
+        sr.groupID=sa.groupID) -- JOIN
+      ) AND
+    q.queueCate=checkTableCategory(rt.seatCount)
+  ORDER BY
+    q.queueDate ASC
+  LIMIT 1
+  ;
+END$$
+DELIMITER ;
+
+
+DELIMITER $$
+CREATE PROCEDURE `checkWaitingQueue3`()
+NOT DETERMINISTIC
+CONTAINS SQL
+proc:BEGIN
+  DECLARE gID VARCHAR(36) DEFAULT NULL;
+  DECLARE queueNum VARCHAR(4) DEFAULT NULl;
+  DECLARE queueCate VARCHAR(1) DEFAULT NULL;
+  DECLARE tableNum INTEGER DEFAULT NULL;
+  DECLARE positionID VARCHAR(36) DEFAULT NULL;
+
+  DECLARE queueTicket VARCHAR(5) DEFAULT NULL;
+
+  SELECT
+    q.groupID, q.queueNo, q.queueCate, rt.tableNo, rt.positionID
+	 INTO
+	 gID, queueNum, queueCate, tableNum, positionID
+  FROM queue q, RestaurantTable rt
+  WHERE
+    -- q.queueID IN SELECT waitingQueue() AND
+    q.queueID IN
+      (SELECT q.queueID
+      FROM
+      Queue q LEFT JOIN servicereceiver sr ON sr.groupID=q.groupID
+      WHERE
+        sr.enterDate IS NULL AND -- Select waiting queue;
+        sr.valid=1 -- Still valid
+      ) AND
+    -- rt.tableNo IN SELECT freeTables() AND
+    rt.tableNo IN
+      (SELECT rt.tableNo
+      FROM restauranttable rt
+      WHERE rt.tableNo NOT IN -- Table which is free
+        (SELECT DISTINCT sa.tableNo -- Table that is full
+        FROM `ServiceReceiver` sr, `SitsAt` sa
+        WHERE sr.enterDate IS NOT NULL AND -- Customer has table
+        sr.leaveDate IS NULL AND -- Customer has not left
+        sr.groupID=sa.groupID) -- JOIN
+      ) AND
+    q.queueCate=checkTableCategory(rt.seatCount)
+  ORDER BY
+    q.queueDate ASC
+  LIMIT 1
+  ;
+
+  -- Exists
+  IF (gID IS NOT NULL) THEN
+    SET queueTicket = CONCAT(queueCate, queueNum);
+    CALL sitAtAndUpdate(gID, tableNum);
+  END IF;
+
+  SELECT
+    gID AS groupID,
+    queueTicket AS queueID,
+    tableNum AS tableNo,
+    positionID
+  ;
+END$$
+DELIMITER ;

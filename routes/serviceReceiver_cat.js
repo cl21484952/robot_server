@@ -193,6 +193,14 @@ router.get('/srInvalid', pathCalled, (req, res, next) => {
 });
 
 
+router.get('/checkCallingQueue', pathCalled, (req, res, next) => {
+  conn.query("CALL checkWaitingQueue();", (error, results, fields) => {
+    if (error) throw error;
+    res.send(results);
+  });
+});
+
+
 // callback the name of the table
 module.exports.checkTableCategory = checkTableCategory = function(amtOfPpl, callback) {
 
