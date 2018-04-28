@@ -136,7 +136,7 @@ router.get('/requestQueue', pathCalled, (req, res, next) => {
 
   conn.query("SELECT requestQueue(?) AS queueNo;", [amountOfPeople], (error, results, fields)=>{
     if (error) throw error;
-    rtnFormat.queueNo = results[0][0].queueNo;
+    rtnFormat.queueNo = results[0].queueNo;
     res.send(rtnFormat);
   });
 });
@@ -192,11 +192,18 @@ router.get('/srInvalid', pathCalled, (req, res, next) => {
   });
 });
 
-
+/*
+Returns
+{groupID string or null
+queueNo string or null
+tableNo integer or null
+positionID string or null}
+*/
 router.get('/checkCallingQueue', pathCalled, (req, res, next) => {
   conn.query("CALL checkWaitingQueue();", (error, results, fields) => {
     if (error) throw error;
-    res.send(results);
+    res.send(results[0][0]);
+    console.log(results);
   });
 });
 

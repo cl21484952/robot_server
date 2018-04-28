@@ -51,7 +51,7 @@ app.use('/menuItemImg', express.static(__dirname + '/menuItemImg'));
 // REST api
 const server = http.Server(app);
 let SERVER_PORT = 100;
-server.listen(SERVER_PORT, () => {
+server.listen(SERVER_PORT, "0.0.0.0", () => {
   console.log(`Server on port: ${SERVER_PORT}!`);
 });
 

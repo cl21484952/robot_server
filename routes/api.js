@@ -19,7 +19,7 @@ router.get('/restaurantName', pathCalled, (req, res, next) => {
 
 function restaurantNameGet(callback) {
   let q1 = 'SELECT * FROM `Restaurant`;';
-  conn.queryDB(q1, (error, results, fields) => {
+  conn.query(q1, (error, results, fields) => {
     if (error) throw error;
     callback(results);
   });

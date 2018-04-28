@@ -1,8 +1,16 @@
-<script src="/socket.io/socket.io.js"></script>
-<script>
-  var socket = io('http://localhost');
-  socket.on('serverTest', function (data) {
-    console.log(data);
-    socket.emit('clientTest', { my: 'data' });
-  });
-</script>
+<html>
+<header>
+  <script src="/socket.io/socket.io.js"></script>
+</header>
+<body>
+  <h1>NODEJS - SERVER</h1>
+  <script>
+    var socket = io('http://localhost');
+    socket.on('serverTest', function(data) {
+      console.log(data);
+      socket.emit('clientTest', {
+        my: 'data'
+      });
+    });
+  </script>
+</body>
