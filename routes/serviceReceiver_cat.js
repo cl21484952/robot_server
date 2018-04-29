@@ -194,10 +194,10 @@ router.get('/srInvalid', pathCalled, (req, res, next) => {
 
 /*
 Returns
-{groupID string or null
-queueNo string or null
-tableNo integer or null
-positionID string or null}
+{"groupID": string or null,
+"queueNo": string or null,
+"tableNo": integer or null,
+"positionID": string or null}
 */
 router.get('/checkCallingQueue', pathCalled, (req, res, next) => {
   conn.query("CALL checkWaitingQueue();", (error, results, fields) => {
