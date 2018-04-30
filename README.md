@@ -132,10 +132,10 @@ Given `groupID`, set the `valid` field to `0`
 
 #### /checkCallingQueue
 
-jjj???
+Get the available queue that can be called.
 
 # Contacts
 
 * Phone: 1-800-system-provider - To contact the creator of the system
 * Email: thisProvider@provider.com - To email creator of the system
-* And the owner of this repository 
+* And the owner of this repository
