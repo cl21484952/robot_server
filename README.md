@@ -1,6 +1,6 @@
 # Restaurant Central Server
 
-This is a server which is used to manage data for the UI
+This is a server which is used to manage data, communicate, and provide logic for the Robot UI. From menu to queuing system in the integrated robot system.
 
 # Getting Started
 
@@ -134,6 +134,8 @@ Given `groupID`, set the `valid` field to `0`
 
 jjj???
 
-# Credits
+# Contacts
 
-The images used in this repository are place holders
+* Phone: 1-800-system-provider - To contact the creator of the system
+* Email: thisProvider@provider.com - To email creator of the system
+* And the owner of this repository 
