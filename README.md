@@ -2,7 +2,6 @@
 
 This is a server which is used to manage data for the UI
 
-
 # Getting Started
 
 ## Prerequisites
@@ -16,9 +15,6 @@ This is a server which is used to manage data for the UI
 ### Clone Repository
 
 Clone the github repository in the GitHub Desktop
-```
-https://github.com/cl21484952/robot_server
-```
 
 ### Setting Up MySQL Server
 
@@ -75,30 +71,69 @@ The server provide service through REST pattern.
 
 #### /restaurantName
 
-#### /getMenuItem?mVer=`N1`
+```
+{restaurantName: 'Example restaurantName'}
+```
+
+#### /getMenuItem=[?mVer=`N1`]
+
+Query
+`N1` (integer) - The specific version of the menu, otherwise the latest version is returned
+
+Return array of map
+```
+[
+{
+  itemNo: 1,
+  itemName: 'Fried Rice',
+  itemDescription: 'Gud Fud',
+  itemPrice: 45,
+  isAvailable: 1,
+  category: 1
+}, ...
+]
+```
 
 #### /loginDemo?id=`N1`&password=`N2`
+
+Returns `true` IFF password is valid for the repective ID else `false`
 
 ### Robot Services - /robot
 
 #### /updateStatus?rstatus=`N1`&robotUUID=`N2`
 
+Updates the status of a robot given it's UUID
+
 ### Service Receiver Services - /sr
 
 #### /checkTable?amountOfPeople=`N1`
 
+Check if table of the given `amountOfPeople` is available. If available, a table will be reserved immediately and returned in `tableInfo` field. Otherwise number of waiting queue `waitingQ` is given. If erroneous query is detected, `error` reason will be provided.
+```
+{
+  error: null or error message,
+  exceedMaxSeatCount: boolean,
+  tableInfo: [],
+  waitingQ: -1
+}
+```
+
 #### /requestQueue?amountOfPeople=`N1`
+
+A queue number will be returned in the format of `category` `queueNum`
 
 #### /srLeft?groupID=`N1`[&leaveDate=`N2`]
 
+Given `groupID`, set `leaveDate` of service receiver to the `leaveDate` provided, otherwise it will be assume to current server time.
+
 #### /srInvalid?groupID=`N1`
+
+Given `groupID`, set the `valid` field to `0`
 
 #### /checkCallingQueue
 
-## Authors
+jjj???
 
-* aa
+# Credits
 
-## Acknowledgments
-
-* bb
+The images used in this repository are place holders
