@@ -78,6 +78,7 @@ router.get('/checkTable', pathCalled, (req, res, next) => {
     }
     rtnFormat.waitingQ = results[0][0]['waitingQueue'];
     res.send(rtnFormat);
+    console.log(results[0][0]);
   });
 
   // let cate = checkTableCategory(amountOfPeople);
@@ -203,7 +204,7 @@ router.get('/checkCallingQueue', pathCalled, (req, res, next) => {
   conn.query("CALL checkWaitingQueue();", (error, results, fields) => {
     if (error) throw error;
     res.send(results[0][0]);
-    console.log(results);
+    console.log(results[0][0]);
   });
 });
 
@@ -366,11 +367,12 @@ Callback Format:
 NOTE: Auto drop queue as CASCADE is used
 */
 module.exports.srInvalidate = srInvalidate = function(groupID, callback) {
-  let q1 = 'UPDATE `servicereceiver` SET `enterDate`=? `valid`=? WHERE `groupID`=?;';
-  conn.query(q1, [null, 0, groupID], (error, results, fields) => {
+  let q1 = 'UPDATE `servicereceiver` SET `enterDate`=NULL, `valid`=0 WHERE `groupID`=?;';
+  conn.query(q1, [groupID], (error, results, fields) => {
     if (error) throw error;
+	console.log(results);
     callback({
-      "affectedRows": results[0].affectedRows
+      "affectedRows": results[0]
     });
   });
 }

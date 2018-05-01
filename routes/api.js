@@ -37,6 +37,7 @@ router.get('/getMenuItem', pathCalled, (req, res, next) => {
   if (!mVer) { // Version not provided
     menuItemVersionLatest((data) => {
       res.send(data);
+      console.log(data);
     });
     return;
   }
@@ -51,6 +52,7 @@ router.get('/getMenuItem', pathCalled, (req, res, next) => {
 
   menuItemVersion(mVer, (data) => {
     res.send(data);
+    console.log(data);
   });
 });
 
