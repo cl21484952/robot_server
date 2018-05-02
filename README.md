@@ -139,3 +139,7 @@ Get the available queue that can be called.
 * Phone: 1-800-system-provider - To contact the creator of the system
 * Email: thisProvider@provider.com - To email creator of the system
 * And the owner of this repository
+
+# License
+
+All rights reserved
